@@ -97,7 +97,7 @@ class DemoSeeder extends Seeder
         }
 
         // Alguns reagendamentos futuros
-        Agendamento::where('status', StatusAgendamento::Confirmado)->where('inicio', '>', now()->addDay())->inRandomOrder()->limit(4)->get()
+        Agendamento::with('servico')->where('status', StatusAgendamento::Confirmado)->where('inicio', '>', now()->addDay())->inRandomOrder()->limit(4)->get()
             ->each(function (Agendamento $ag) use ($reag, $disp, $admin) {
                 $slots = $disp->slots($ag->servico, $ag->profissional_id, $ag->inicio->copy()->addDays(2), DisponibilidadeService::MODO_PAINEL);
                 if ($slots) {
