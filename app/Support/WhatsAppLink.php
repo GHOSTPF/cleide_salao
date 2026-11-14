@@ -18,9 +18,14 @@ class WhatsAppLink
     public static function link(string $numero, string $mensagem = ''): string
     {
         $numero = Telefone::normalizar($numero);
-        $url = 'https://wa.me/' . $numero;
 
-        return $mensagem === '' ? $url : $url . '?text=' . rawurlencode($mensagem);
+        if ($mensagem === '') {
+            return 'https://wa.me/' . $numero;
+        }
+
+        // Com texto, vai direto ao api.whatsapp.com: o redirecionamento do wa.me
+        // troca emojis por "�" no WhatsApp Web/Desktop.
+        return 'https://api.whatsapp.com/send?phone=' . $numero . '&text=' . rawurlencode($mensagem);
     }
 
     public static function numeroSalao(): string
@@ -37,19 +42,24 @@ class WhatsAppLink
     public static function mensagemParaSalao(Agendamento $ag): string
     {
         $linhas = [
-            'Olá, ' . Setting::get('nome_salao') . '! ✨',
-            'Acabei de agendar pelo site:',
-            '📌 Código: ' . $ag->codigo,
-            '👤 Nome: ' . ($ag->nome_informado ?: $ag->cliente->nome),
-            '📱 WhatsApp: ' . Telefone::formatar($ag->cliente->telefone),
-            '💇 Serviço: ' . $ag->servico->nome,
-            '💁 Profissional: ' . $ag->profissional->nome_exibicao,
-            '📅 Data: ' . self::dataExtenso($ag->inicio),
-            '🕘 Horário: ' . $ag->inicio->format('H:i'),
+            'Olá, ' . Setting::get('nome_salao') . '! 🌸',
+            'Tudo bem? Acabei de fazer meu agendamento pelo site e gostaria de confirmar com vocês 💕',
+            '',
+            '✨ *Meu agendamento* ✨',
+            '',
+            '🔖 *Código:* ' . $ag->codigo,
+            '👤 *Nome:* ' . ($ag->nome_informado ?: $ag->cliente->nome),
+            '📱 *WhatsApp:* ' . Telefone::formatar($ag->cliente->telefone),
+            '💇 *Serviço:* ' . $ag->servico->nome,
+            '💁 *Profissional:* ' . $ag->profissional->nome_exibicao,
+            '📅 *Data:* ' . self::dataExtenso($ag->inicio),
+            '⏰ *Horário:* ' . $ag->inicio->format('H:i'),
         ];
         if (filled($ag->observacoes_cliente)) {
-            $linhas[] = '📝 Obs.: ' . $ag->observacoes_cliente;
+            $linhas[] = '📝 *Observações:* ' . $ag->observacoes_cliente;
         }
+        $linhas[] = '';
+        $linhas[] = 'Fico no aguardo da confirmação. Desde já, agradeço o carinho! 🤍';
 
         return implode("\n", $linhas);
     }

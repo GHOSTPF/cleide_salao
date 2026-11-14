@@ -120,4 +120,4 @@ Sinal via Pix para serviços longos, múltiplos serviços por agendamento, pacot
 
 ## Observação sobre emojis no WhatsApp
 
-A mensagem é montada no backend com `rawurlencode` (UTF-8 correto, coberto por teste). No **navegador de desktop**, porém, a página de redirecionamento do próprio WhatsApp (`wa.me` → `api.whatsapp.com`) troca emojis por `�`. No celular com o app instalado o link abre direto no app. Se o salão preferir evitar o risco, basta remover os emojis em `App\Support\WhatsAppLink::mensagemParaSalao()`.
+A mensagem é montada no backend com `rawurlencode` (UTF-8 correto, coberto por teste). Links com texto usam `https://api.whatsapp.com/send?phone=...&text=...` direto, porque o redirecionamento do `wa.me` troca emojis por `�` no WhatsApp Web/Desktop. Links sem texto continuam em `wa.me`.

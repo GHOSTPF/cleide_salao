@@ -67,7 +67,7 @@ class AgendamentoPublicoTest extends TestCase
             ->assertOk()
             ->assertSee($ag->codigo)
             ->assertSee('Recebemos seu pedido!')
-            ->assertSee('https://wa.me/5583986669294?text=', false)
+            ->assertSee('https://api.whatsapp.com/send?phone=5583986669294&amp;text=', false)
             ->assertSee('Adicionar ao Google Agenda');
 
         // Registro do clique no WhatsApp (sendBeacon)
