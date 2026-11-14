@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html { scroll-behavior: smooth; }
+    body { @apply bg-luna-cream text-luna-ink font-sans antialiased; }
+    [x-cloak] { display: none !important; }
+}
+
+@layer components {
+    .titulo-secao { @apply font-serif text-luna-ink text-3xl leading-tight sm:text-[2.75rem]; }
+    /* Linha pequena acima do título: itálico serifado, sem caixa-alta espaçada */
+    .sobretitulo { @apply font-serif text-lg italic text-luna-brown; }
+    .card { @apply bg-white rounded-3xl shadow-soft; }
+    .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-luna-gold focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed; }
+    .btn-primario { @apply btn bg-luna-ink text-white hover:bg-black; }
+    .btn-secundario { @apply btn border border-luna-nude text-luna-ink bg-white hover:border-luna-gold; }
+    .btn-perigo { @apply btn bg-red-700 text-white hover:bg-red-800; }
+    .btn-whatsapp { @apply btn bg-green-700 text-white hover:bg-green-800; }
+    .btn-sm { @apply px-3 py-1.5 text-xs; }
+    .campo { @apply block w-full rounded-2xl border-gray-200 bg-white text-luna-ink placeholder-gray-400 focus:border-luna-gold focus:ring-luna-gold; }
+    .rotulo { @apply block text-sm font-medium text-luna-ink mb-1; }
+    .pilula { @apply rounded-full border border-gray-200 px-4 py-2 text-sm transition hover:border-luna-gold; }
+    .pilula-ativa { @apply bg-luna-ink text-white border-luna-ink; }
+    .tabela { @apply min-w-full divide-y divide-luna-sand text-sm; }
+    .tabela th { @apply px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-luna-brown; }
+    .tabela td { @apply px-3 py-2 align-top; }
+    .link { @apply text-luna-brown underline decoration-luna-nude underline-offset-2 hover:text-luna-ink; }
+
+    /*
+     * Painel (admin e profissional): visual de ferramenta de trabalho.
+     * Cantos discretos, bordas finas no lugar de sombras, menos caixa-alta.
+     * Escopado em .painel para não mexer no site público.
+     */
+    .painel .card { @apply rounded-lg border border-luna-sand/80 shadow-none; }
+    .painel .card h2.font-serif { @apply font-sans text-base font-semibold; }
+    .painel .btn { @apply rounded-md px-4 py-2; }
+    .painel .btn-sm { @apply px-2.5 py-1.5; }
+    .painel .btn-secundario { @apply border-gray-300 hover:border-luna-brown hover:bg-luna-cream/60; }
+    .painel .campo { @apply rounded-md border-gray-300; }
+    .painel .pilula { @apply rounded-md; }
+    .painel .tabela th { @apply bg-luna-cream/50 py-2.5 text-[11px] font-medium normal-case tracking-normal text-gray-600; }
+    .painel .tabela td { @apply py-2.5 align-middle; }
+    .tabela th.text-right { text-align: right; }
+    .painel .tabela tbody tr { @apply transition-colors hover:bg-luna-cream/40; }
+
+    /* Rótulo pequeno, em caixa normal (no lugar do UPPERCASE espaçado) */
+    .painel .legenda { @apply text-xs text-gray-500; }
+
+    /*
+     * Site público e telas de login: mesma linguagem do painel, um pouco mais quente.
+     */
+    .site .card { @apply rounded-lg border border-luna-sand shadow-none; }
+    .site .btn { @apply rounded-md; }
+    .site .campo { @apply rounded-md border-gray-300; }
+    .site .pilula { @apply rounded-md bg-white tabular-nums; }
+
+    /* Abas sublinhadas */
+    .abas { @apply flex gap-5 text-sm; box-shadow: inset 0 -1px 0 theme('colors.luna.sand'); }
+    .abas > a, .abas > button { @apply whitespace-nowrap border-b-2 border-transparent pb-2.5 text-gray-600 transition-colors hover:text-luna-ink; }
+    .abas > [aria-current], .abas > [aria-pressed="true"] { @apply border-luna-ink font-medium text-luna-ink; }
+}
+
+/* Animação discreta ao rolar (só quando o JS está ativo) */
+.js .revelar { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+.js .revelar.visivel { opacity: 1; transform: none; }
+
+.vidro { background: rgba(255, 255, 255, 0.55); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    .revelar { opacity: 1 !important; transform: none !important; }
+}
