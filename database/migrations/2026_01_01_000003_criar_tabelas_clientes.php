@@ -37,7 +37,10 @@ return new class extends Migration
             $table->index('ultima_visita_em');
         });
 
-        DB::statement('CREATE INDEX clientes_nome_trgm ON clientes USING gin (nome gin_trgm_ops)');
+        // Índice trigram só quando a extensão pg_trgm existe (opcional em hospedagem compartilhada).
+        if (DB::selectOne("SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'")) {
+            DB::statement('CREATE INDEX clientes_nome_trgm ON clientes USING gin (nome gin_trgm_ops)');
+        }
 
         Schema::create('clientes_duplicidade_ignorada', function (Blueprint $table) {
             $table->foreignId('cliente_a_id')->constrained('clientes')->cascadeOnDelete();

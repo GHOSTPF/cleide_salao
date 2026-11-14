@@ -213,7 +213,94 @@ class ClienteService
     /** Pares de possíveis duplicadas: nome com similaridade >= 0.6 e telefones diferentes. */
     public function possiveisDuplicadas(int $limite = 50): Collection
     {
-        $linhas = DB::transaction(function () use ($limite) {
+        $linhas = $this->temPgTrgm()
+            ? $this->duplicadasViaPgTrgm($limite)
+            : $this->duplicadasViaPhp($limite);
+
+        $clientes = Cliente::whereIn('id', collect($linhas)->flatMap(fn ($l) => [$l->a_id, $l->b_id])->unique())->get()->keyBy('id');
+
+        return collect($linhas)->map(fn ($l) => (object) [
+            'a' => $clientes[$l->a_id],
+            'b' => $clientes[$l->b_id],
+            'similaridade' => round((float) $l->similaridade * 100),
+        ]);
+    }
+
+    private function temPgTrgm(): bool
+    {
+        static $tem = null;
+
+        return $tem ??= (bool) DB::selectOne("SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'");
+    }
+
+    /**
+     * Fallback sem a extensão pg_trgm (hospedagem compartilhada): mesmo algoritmo de trigramas
+     * do PostgreSQL, calculado em PHP com índice invertido para não comparar todos os pares.
+     */
+    private function duplicadasViaPhp(int $limite, float $limiar = 0.6): array
+    {
+        $clientes = DB::table('clientes')->whereNull('deleted_at')->get(['id', 'nome', 'telefone']);
+
+        $trigramas = [];
+        $indice = [];
+        foreach ($clientes as $c) {
+            $trigramas[$c->id] = self::trigramas((string) $c->nome);
+            foreach (array_keys($trigramas[$c->id]) as $t) {
+                $indice[$t][] = $c->id;
+            }
+        }
+
+        // Conta trigramas em comum apenas entre clientes que compartilham algum trigrama
+        $comuns = [];
+        foreach ($indice as $ids) {
+            $n = count($ids);
+            for ($i = 0; $i < $n; $i++) {
+                for ($j = $i + 1; $j < $n; $j++) {
+                    [$a, $b] = $ids[$i] < $ids[$j] ? [$ids[$i], $ids[$j]] : [$ids[$j], $ids[$i]];
+                    $comuns[$a][$b] = ($comuns[$a][$b] ?? 0) + 1;
+                }
+            }
+        }
+
+        $telefones = $clientes->pluck('telefone', 'id');
+        $ignorados = DB::table('clientes_duplicidade_ignorada')->get()
+            ->mapWithKeys(fn ($i) => [min($i->cliente_a_id, $i->cliente_b_id).'-'.max($i->cliente_a_id, $i->cliente_b_id) => true]);
+
+        $pares = [];
+        foreach ($comuns as $a => $bs) {
+            foreach ($bs as $b => $qtd) {
+                $sim = $qtd / (count($trigramas[$a]) + count($trigramas[$b]) - $qtd);
+                if ($sim < $limiar || $telefones[$a] === $telefones[$b] || isset($ignorados["{$a}-{$b}"])) {
+                    continue;
+                }
+                $pares[] = (object) ['a_id' => $a, 'b_id' => $b, 'similaridade' => $sim];
+            }
+        }
+
+        usort($pares, fn ($x, $y) => $y->similaridade <=> $x->similaridade);
+
+        return array_slice($pares, 0, $limite);
+    }
+
+    /** Conjunto de trigramas no mesmo formato do pg_trgm (minúsculas, palavras com "  " antes e " " depois). */
+    private static function trigramas(string $texto): array
+    {
+        $set = [];
+        $palavras = preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($texto), -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($palavras as $p) {
+            $p = '  '.$p.' ';
+            $len = mb_strlen($p);
+            for ($i = 0; $i + 3 <= $len; $i++) {
+                $set[mb_substr($p, $i, 3)] = true;
+            }
+        }
+
+        return $set;
+    }
+
+    private function duplicadasViaPgTrgm(int $limite): array
+    {
+        return DB::transaction(function () use ($limite) {
             DB::statement('SET LOCAL pg_trgm.similarity_threshold = 0.6');
 
             return DB::select('
@@ -229,14 +316,6 @@ class ClienteService
                 ORDER BY similaridade DESC
                 LIMIT ?', [$limite]);
         });
-
-        $clientes = Cliente::whereIn('id', collect($linhas)->flatMap(fn ($l) => [$l->a_id, $l->b_id])->unique())->get()->keyBy('id');
-
-        return collect($linhas)->map(fn ($l) => (object) [
-            'a' => $clientes[$l->a_id],
-            'b' => $clientes[$l->b_id],
-            'similaridade' => round((float) $l->similaridade * 100),
-        ]);
     }
 
     public function ignorarDuplicidade(Cliente $a, Cliente $b): void

@@ -52,8 +52,10 @@ return new class extends Migration
 
         // O coração do sistema: impossível dois agendamentos ativos sobrepostos para a mesma profissional,
         // mesmo com requisições simultâneas. reagendado/cancelado/nao_compareceu ficam fora e liberam o horário.
+        // O id vira um range de um único valor ([id,id]) para usar && nativo do GiST, sem depender da
+        // extensão btree_gist (indisponível em hospedagem compartilhada). Efeito idêntico a "profissional_id WITH =".
         DB::statement("ALTER TABLE agendamentos ADD CONSTRAINT agendamentos_sem_conflito
-            EXCLUDE USING gist (profissional_id WITH =, periodo WITH &&)
+            EXCLUDE USING gist (int8range(profissional_id, profissional_id, '[]') WITH &&, periodo WITH &&)
             WHERE (status IN ('pendente', 'confirmado', 'concluido'))");
 
         DB::statement('ALTER TABLE agendamentos ADD CONSTRAINT agendamentos_fim_apos_inicio CHECK (fim > inicio AND fim_bloqueio >= fim)');
